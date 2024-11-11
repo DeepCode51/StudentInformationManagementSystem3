@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>信息后台管理</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo">信息后台管理</div>
+
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item"><a href="" th:text="${session.user.username}"></a></li>
+            <li class="layui-nav-item"><a href="" id="outSys">退出</a></li>
+        </ul>
+    </div>
+
+    <div class="layui-side layui-bg-black">
+        <div class="layui-side-scroll">
+            <!-- 左侧导航区域（可配合layui已有的垂直导航） -->
+            <ul class="layui-nav layui-nav-tree" lay-filter="test">
+                <li class="layui-nav-item layui-nav-itemed">
+                    <a class="" href="javascript:;">管理信息</a>
+                    <dl class="layui-nav-child">
+                        <dd><a href="javascript:;" onclick="gotoPage('/studentList.html')">学生信息列表</a></dd>
+                        <dd><a href="javascript:;" onclick="gotoPage('/teacherList.html')">老师信息列表</a></dd>
+
+                    </dl>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body">
+        <!-- 内容主体区域 -->
+        <iframe id="iframeID" src="/studentList.html" style="    border: 0px;    width: 100%;    height: 100%;"></iframe>
+    </div>
+
+    <div class="layui-footer">
+        <!-- 底部固定区域 -->
+        © 米宅
+    </div>
+</div>
+<script src="/js/jquery-3.3.1.js"></script>
+<script src="/layui/layui.js"></script>
+<script>
+    //JavaScript代码区域
+    layui.use(['element', 'jquery'], function () {
+        var element = layui.element;
+        var $ = layui.jquery;
+
+        $("#outSys").click(() => {
+            $.ajax({
+                type: "get",
+                url: "/loginController?method=loginOut",
+                data: '',
+                success: function (result) {
+                    var res=JSON.parse(result);
+                    if (res.code == 200) {//登录成功
+                        window.location.href = '/login.html';
+                    } else {
+                       alert(res.msg)
+                    }
+                }
+            });
+        })
+
+    });
+
+   function gotoPage(url){
+       $("#iframeID").attr("src",url);
+    }
+
+</script>
+</body>
+</html>

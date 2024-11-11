@@ -1,0 +1,285 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>学生列表</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+    <meta http-equiv="expires" content="Wed, 26 Feb 1997 08:21:57 GMT">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="stylesheet" href="/layui/css/layui.css" media="all"/>
+    <link rel="stylesheet" href="/css/list.css" media="all"/>
+</head>
+<body class="childrenBody">
+
+<blockquote class="layui-elem-quote news_search" style="display: block;float:left; ">
+    <div class="layui-inline" style=" margin-left: 8px; margin-right: 16px;">
+        <button class="layui-btn" id="addStudent">添加学生</button>
+    </div>
+    <div style="display: block;float:left;">
+            <form class="layui-form" style=" display: block; float: left;">
+                <div class="layui-inline">
+                    <input type="text" id="noSearch" class="layui-input userName"
+                           name="noSearch" placeholder="学号" value="">
+                </div>
+                <div class="layui-inline" style=" margin-left: 8px; margin-right: 16px;">
+                    <a class="layui-btn search_btn" lay-submit="" data-type="search"
+                       lay-filter="search">查询</a>
+                </div>
+                <div class="layui-inline" style=" margin-left: 8px; margin-right: 16px;">
+                    <a class="layui-btn " id="downLoadButton">导出</a>
+                </div>
+            </form>
+    </div>
+
+</blockquote>
+<div class="layui-form" style="display: block;float:left; width: 100%">
+    <table id="userList" lay-filter="userList"></table>
+</div>
+<iframe src="" id="downloadFile" style="display:none"></iframe>
+<script type="text/javascript" src="/layui/layui.js"></script>
+<script type="text/html" id="barEdit">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">修改</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+<script type="text/html" id="typeTpl">
+    {{#  if(d.sex === 1){ }}
+    <span >女</span>
+    {{#  } else if(d.sex === 0){ }}
+    <span >男</span>
+    {{#  } }}
+</script>
+
+<script>
+    var $layer;
+    var $table;
+    var indexadd;
+
+    layui.config({base: "js/"}).use(['form', 'layer', 'jquery', 'table', 'laydate', 'upload'], function () {
+        var form = layui.form,
+            table = layui.table,
+            layer = layui.layer,
+            upload = layui.upload,
+            $ = layui.jquery;
+        var active = {
+            search: function () {
+                //执行重载
+                table.reload('userList', {
+                    page: {
+                        curr: 1
+                        //重新从第 1 页开始
+                    },
+                    where: {
+                        //key: {
+                        noSearch: $("input[name=noSearch]").val(),
+                        _t: new Date().getTime()
+                    }
+                });
+            }
+        };
+        //查询
+        $(".search_btn").click(function () {
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+        //加载页面数据
+        table.render({
+            id: 'userList'
+            , elem: '#userList'
+            , url: '/studentController?method=findAllToSys' //数据接口
+            , limit: 10//每页默认数
+            , limits: [10, 20, 30, 40]
+            , cols: [
+                [ //表头
+                    {
+                        type: 'numbers',
+                        title: '序号',
+                        width: 50
+                    }, {
+                    field: 'name',
+                    title: '姓名',
+                }, {
+                    field: 'no',
+                    title: '学号',
+                }, {
+                    field: 'age',
+                    title: '年龄',
+                }, {
+                    field: 'sex',
+                    title: '性别',
+                    templet: '#typeTpl'
+                }, {
+                    field: 'classes',
+                    title: '班级',
+                }, {
+                    field: 'address',
+                    title: '出生地',
+                }, {
+                    field: 'nation',
+                    title: '民族',
+                }, {
+                    title: '操作',
+                    toolbar: '#barEdit',
+                    width: 150
+                }]
+            ]
+            , page: true  //开启分页
+            , where: {
+                timestamp: (new Date()).valueOf(),
+                noSearch: $("input[name=noSearch]").val()
+            }
+        });
+
+        $("#downLoadButton").click(function () {
+
+
+            var  noSearch= $("input[name=noSearch]").val()
+
+            var url = "/studentController?method=updateStudentList&noSearch=" + noSearch;
+            console.log("下载", url)
+            $("#downloadFile").attr("src", url);
+        })
+
+
+        //添加图片
+        $("#addStudent").click(function () {
+            indexadd = layer.open({
+                title: "添加学生信息",
+                type: 2,
+                content: "/studentAdd.html",
+                success: function (layero, index) {
+                }
+            })
+            layui.layer.full(indexadd);
+        })
+
+        //监听工具条
+        table.on('tool(userList)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'del') {
+                layer.confirm('真的删除此条数据吗?', function (index) {
+                    $.ajax({
+                        async: false,
+                        url: '/studentController?method=delete',
+                        type: "post",
+                        data: {
+                            id: data.id
+                        },
+                        success: function (d) {
+
+                            table.reload('userList', {
+                                page: {
+                                    curr: 1
+                                    //重新从第 1 页开始
+                                },
+                                where: {
+                                    //key: {
+                                    _t: new Date().getTime(),
+                                    noSearch: $("input[name=noSearch]").val()
+                                }
+                            });
+                        }
+                    })
+
+
+
+                    layer.close(index);
+                    setTimeout(()=>{
+                        table.reload('userList', {
+                            page: {
+                                curr: 1
+                                //重新从第 1 页开始
+                            },
+                            where: {
+                                //key: {
+                                _t: new Date().getTime(),
+                                noSearch: $("input[name=noSearch]").val()
+                            }
+                        });
+                    }, 2000);
+
+                });
+            }
+            if (obj.event === 'edit') {
+                localStorage.setItem("id",obj.data.id);
+
+                indexadd = layer.open({
+                    title: "修改学生信息",
+                    type: 2,
+                    content: "/studentEdit.html",
+                    success: function (layero, index) {
+                    }
+                });
+                layui.layer.full(indexadd);
+            }
+
+
+        });
+
+
+
+
+        $table = table;
+        $layer = layer;
+
+    })
+
+
+    //添加后刷新表格
+    function uploadTable() {
+        $layer.close(indexadd);
+        //执行重载
+        $table.reload('userList', {
+            page: {
+                curr: 1
+                //重新从第 1 页开始
+            },
+            where: {
+                _t: new Date().getTime()
+            }
+        });
+    }
+
+
+    //格式化时间
+    function formatTime(datetime, fmt) {
+        if (datetime == null || datetime == 0) {
+            return "";
+        }
+        if (parseInt(datetime) == datetime) {
+            if (datetime.length == 10) {
+                datetime = parseInt(datetime) * 1000;
+            } else if (datetime.length == 13) {
+                datetime = parseInt(datetime);
+            }
+        }
+        datetime = new Date(datetime);
+        var o = {
+            "M+": datetime.getMonth() + 1, //月份
+            "d+": datetime.getDate(), //日
+            "h+": datetime.getHours(), //小时
+            "m+": datetime.getMinutes(), //分
+            "s+": datetime.getSeconds(), //秒
+            "q+": Math.floor((datetime.getMonth() + 3) / 3), //季度
+            "S": datetime.getMilliseconds()
+            //毫秒
+        };
+        if (/(y+)/.test(fmt))
+            fmt = fmt.replace(RegExp.$1, (datetime.getFullYear() + "")
+                .substr(4 - RegExp.$1.length));
+        for (var k in o)
+            if (new RegExp("(" + k + ")").test(fmt))
+                fmt = fmt.replace(RegExp.$1,
+                    (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k])
+                        .substr(("" + o[k]).length)));
+        return fmt;
+    }
+</script>
+</body>
+</html>
